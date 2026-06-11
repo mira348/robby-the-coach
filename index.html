@@ -239,6 +239,12 @@ textarea.fi { resize: none; }
   border-right: none;
   border-top: none;
 }
+@supports (-webkit-touch-callout: none) {
+  #pg-coach .chat-w {
+    height: -webkit-fill-available;
+    height: calc(100svh - 56px - 68px);
+  }
+}
 .chdr { padding: 12px 16px; border-bottom: 0.5px solid var(--b1); display: flex; align-items: center; gap: 10px; flex-shrink: 0; }
 .cav { width: 32px; height: 32px; border-radius: 50%; background: var(--ad); border: 1px solid var(--ac); display: flex; align-items: center; justify-content: center; font-size: 13px; color: var(--ac); flex-shrink: 0; }
 .cnm { font-size: 14px; font-weight: 500; }
@@ -633,6 +639,8 @@ textarea.fi { resize: none; }
       <button class="qp" onclick="qp('Analyse my last 7 days of eating')">Weekly review</button>
     </div>
     <div class="cinp">
+      <button class="sbtn" style="background:var(--s2);font-size:20px;" onclick="document.getElementById('chat-ph').click()">📷</button>
+      <input type="file" id="chat-ph" accept="image/*" style="display:none" onchange="sendPhotoToChat(event)">
       <textarea id="coach-inp" placeholder="Tell Robby what you ate, how you feel..." rows="1" onkeydown="ck(event)"></textarea>
       <button class="sbtn" id="sbtn" onclick="sendMsg()">↑</button>
     </div>
@@ -1113,6 +1121,33 @@ async function analyzePhoto(event,type){
       rd.innerHTML=`<b>New scan loaded.</b><br><br>${parsed.coaching_summary||'Scan data extracted.'}`;
     }
   }catch(e){rd.textContent='Could not read photo — try again with better lighting.';}
+}
+
+async function sendPhotoToChat(event){
+  const file=event.target.files[0];if(!file)return;
+  const cm=document.getElementById('chat-msgs');
+  const preview=document.createElement('div');
+  preview.className='msg us';
+  preview.innerHTML='<span style="opacity:.7;font-size:12px">📷 Photo sent...</span>';
+  cm.appendChild(preview);
+  const th=document.createElement('div');th.className='msg th';th.textContent='Robby is analysing your photo...';cm.appendChild(th);
+  cm.scrollTop=cm.scrollHeight;
+  document.getElementById('sbtn').disabled=true;
+  const b64=await new Promise(res=>{const r=new FileReader();r.onload=()=>res(r.result.split(',')[1]);r.readAsDataURL(file);});
+  const todayLog=getTodayLog();
+  const sys=PROFILE+`\n\nTODAY'S LOG:\n${todayLog}\n\nUser sent a food photo. Analyse it, estimate macros, coach them. End with: [[LOG:{"name":"meal name","cal":number,"pro":number,"carb":number,"fat":number}]]`;
+  try{
+    const r=await fetch('https://api.anthropic.com/v1/messages',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({model:'claude-sonnet-4-20250514',max_tokens:1000,system:sys,messages:[...convo,{role:'user',content:[{type:'image',source:{type:'base64',media_type:file.type||'image/jpeg',data:b64}},{type:'text',text:'Here is what I just ate. Analyse and log it.'}]}]})});
+    const d=await r.json();
+    let rep=d.content[0].text;
+    const m=rep.match(/\[\[LOG:(\{.*?\})\]\]/s);
+    if(m){try{const meal=JSON.parse(m[1]);meal.src='photo';meal.time=new Date().toTimeString().slice(0,5);addMeal(meal);updateChatPill();rep=rep.replace(/\[\[LOG:\{.*?\}\]\]/s,'').trim()+'\n\n✓ Logged to your food journal.';}catch(e){}}
+    convo.push({role:'user',content:'[food photo]'});
+    convo.push({role:'assistant',content:rep});
+    th.className='msg co';th.innerHTML=rep.replace(/\n/g,'<br>');
+  }catch(e){th.className='msg co';th.textContent='Could not read photo — try again.';}
+  document.getElementById('sbtn').disabled=false;
+  cm.scrollTop=cm.scrollHeight;
 }
 
 refreshDash();
