@@ -228,8 +228,16 @@ textarea.fi { resize: none; }
   border-radius: var(--r);
   overflow: hidden;
   height: calc(100vh - 220px);
-  min-height: 340px;
-  max-height: 600px;
+  min-height: 400px;
+  max-height: 700px;
+}
+#pg-coach .chat-w {
+  height: calc(100vh - 56px - env(safe-area-inset-top) - 68px);
+  max-height: none;
+  border-radius: 0;
+  border-left: none;
+  border-right: none;
+  border-top: none;
 }
 .chdr { padding: 12px 16px; border-bottom: 0.5px solid var(--b1); display: flex; align-items: center; gap: 10px; flex-shrink: 0; }
 .cav { width: 32px; height: 32px; border-radius: 50%; background: var(--ad); border: 1px solid var(--ac); display: flex; align-items: center; justify-content: center; font-size: 13px; color: var(--ac); flex-shrink: 0; }
@@ -401,7 +409,7 @@ textarea.fi { resize: none; }
     <div style="font-weight:500">Photo your meal</div>
     <div class="sub">Robby estimates full macros instantly</div>
   </div>
-  <input type="file" id="meal-ph" accept="image/*" capture="environment" style="display:none" onchange="analyzePhoto(event,'meal')">
+  <input type="file" id="meal-ph" accept="image/*" style="display:none" onchange="analyzePhoto(event,'meal')">
   <div class="ac2" id="meal-ac"></div>
   <div class="card"><div class="clbl">Today's food log</div><div id="today-log"><div style="font-size:13px;color:var(--mu);text-align:center;padding:16px 0">No meals logged yet.</div></div></div>
   <div class="card">
@@ -411,14 +419,39 @@ textarea.fi { resize: none; }
       <div style="font-weight:500">Photo nutrition facts label</div>
       <div class="sub">Exact macros per serving</div>
     </div>
-    <input type="file" id="lbl-ph" accept="image/*" capture="environment" style="display:none" onchange="analyzePhoto(event,'label')">
+    <input type="file" id="lbl-ph" accept="image/*" style="display:none" onchange="analyzePhoto(event,'label')">
     <div class="ac2" id="lbl-ac"></div>
   </div>
 </div>
 
 <!-- CHECK-IN -->
 <div class="page" id="pg-checkin">
-  <div style="margin-bottom:16px"><div class="serif" style="font-size:26px;font-weight:400;margin-bottom:4px">Daily check-in</div><p style="font-size:13px;color:var(--mu)">Log your Apple Watch data each evening.</p></div>
+  <div style="margin-bottom:16px"><div class="serif" style="font-size:26px;font-weight:400;margin-bottom:4px">Daily check-in</div><p style="font-size:13px;color:var(--mu)">Screenshot your Apple Health summary and drop it here.</p></div>
+
+  <div class="card" style="margin-bottom:14px">
+    <div class="clbl">Step 1 — drop your Health screenshot</div>
+    <div class="uz" onclick="document.getElementById('health-ph').click()" id="health-uz">
+      <span class="ico">📱</span>
+      <div style="font-weight:500">Tap to upload Apple Health screenshot</div>
+      <div class="sub">Open Health app → Summary → screenshot → upload here</div>
+    </div>
+    <input type="file" id="health-ph" accept="image/*" style="display:none" onchange="readHealthScreenshot(event)">
+    <div id="health-parsed" style="display:none">
+      <div style="background:var(--s2);border-radius:var(--rs);padding:14px;margin-bottom:12px;border-left:3px solid var(--ac)">
+        <div style="font-size:12px;color:var(--ac);font-weight:500;margin-bottom:8px">✓ Data read from screenshot — review and submit</div>
+        <div id="health-parsed-vals" style="font-size:13px;line-height:1.9;color:var(--tx)"></div>
+      </div>
+      <button class="btn" onclick="submitHealthData()">Send to Robby for analysis →</button>
+    </div>
+    <div class="ac2" id="health-ac"></div>
+  </div>
+
+  <div style="display:flex;align-items:center;gap:10px;margin-bottom:14px">
+    <div style="flex:1;height:0.5px;background:var(--b2)"></div>
+    <div style="font-size:12px;color:var(--mu);white-space:nowrap">or enter manually</div>
+    <div style="flex:1;height:0.5px;background:var(--b2)"></div>
+  </div>
+
   <div class="card">
     <div class="clbl">Apple Watch data</div>
     <div class="tc2">
@@ -486,7 +519,7 @@ textarea.fi { resize: none; }
       <div style="font-weight:500">Photo your InBody sheet</div>
       <div class="sub">Robby reads and updates your profile</div>
     </div>
-    <input type="file" id="ib-ph" accept="image/*" capture="environment" style="display:none" onchange="analyzePhoto(event,'inbody')">
+    <input type="file" id="ib-ph" accept="image/*" style="display:none" onchange="analyzePhoto(event,'inbody')">
     <div class="ac2" id="ib-ac"></div>
   </div>
 </div>
@@ -579,24 +612,28 @@ textarea.fi { resize: none; }
 </div>
 
 <!-- COACH -->
-<div class="page" id="pg-coach">
-  <div style="margin-bottom:14px"><div class="serif" style="font-size:26px;font-weight:400;margin-bottom:4px">Robby</div><p style="font-size:13px;color:var(--mu)">Your personal coach — knows everything.</p></div>
-  <div class="chat-w">
+<div class="page" id="pg-coach" style="padding:0;max-width:100%;">
+  <div class="chat-w" id="chat-w-main">
     <div class="chdr">
       <div class="cav">R</div>
-      <div><div class="cnm">Robby</div><div class="col">● Online — your full profile loaded</div></div>
+      <div style="flex:1">
+        <div class="cnm">Robby</div>
+        <div class="col" id="chat-status">● Online — knows your full profile + today's log</div>
+      </div>
+      <div id="today-summary-pill" style="font-size:11px;background:var(--ad);border:0.5px solid var(--ac);border-radius:20px;padding:3px 10px;color:var(--ac);display:none"></div>
     </div>
     <div class="msgs" id="chat-msgs">
-      <div class="msg co">Hey! I've got your full profile — 81.5 kg, InBody from May, 900 kcal deficit. You're doing great. What do you need today?</div>
+      <div class="msg co">Hey! I know your full journey and I can see everything you've eaten today. Just talk to me — tell me what you're eating, how you're feeling, what you need. I'll log meals for you too, just describe what you had.</div>
     </div>
     <div class="qps">
-      <button class="qp" onclick="qp('How am I doing overall?')">How am I doing?</button>
-      <button class="qp" onclick="qp('What should I eat today to hit 130g protein?')">Protein plan</button>
-      <button class="qp" onclick="qp('My weight stalled this week, what do I do?')">Weight stalled</button>
+      <button class="qp" onclick="qp('I just had breakfast — 2 eggs, surimi and a protein coffee')">Log breakfast</button>
+      <button class="qp" onclick="qp('What should I eat for lunch to hit my protein target?')">Lunch ideas</button>
+      <button class="qp" onclick="qp('How am I doing today so far?')">Today so far</button>
       <button class="qp" onclick="qp('I feel like giving up today')">I want to quit</button>
+      <button class="qp" onclick="qp('Analyse my last 7 days of eating')">Weekly review</button>
     </div>
     <div class="cinp">
-      <textarea id="coach-inp" placeholder="Talk to Robby..." rows="1" onkeydown="ck(event)"></textarea>
+      <textarea id="coach-inp" placeholder="Tell Robby what you ate, how you feel..." rows="1" onkeydown="ck(event)"></textarea>
       <button class="sbtn" id="sbtn" onclick="sendMsg()">↑</button>
     </div>
   </div>
@@ -868,6 +905,91 @@ function sendLogToCoach(){
   sendMsg();
 }
 
+let parsedHealthData = {};
+
+async function readHealthScreenshot(event) {
+  const file = event.target.files[0]; if (!file) return;
+  const ac = document.getElementById('health-ac');
+  const parsed = document.getElementById('health-parsed');
+  const vals = document.getElementById('health-parsed-vals');
+  ac.style.display = 'block'; ac.textContent = 'Reading your Health data...';
+  parsed.style.display = 'none';
+
+  const b64 = await new Promise(res => {
+    const r = new FileReader(); r.onload = () => res(r.result.split(',')[1]); r.readAsDataURL(file);
+  });
+
+  try {
+    const resp = await fetch('https://api.anthropic.com/v1/messages', {
+      method: 'POST', headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        model: 'claude-sonnet-4-20250514', max_tokens: 800,
+        messages: [{ role: 'user', content: [
+          { type: 'image', source: { type: 'base64', media_type: file.type || 'image/jpeg', data: b64 } },
+          { type: 'text', text: 'This is an Apple Health or Apple Watch screenshot. Extract all health metrics visible. Return ONLY JSON with these fields (use null if not visible): {"steps": number, "active_calories": number, "resting_calories": number, "exercise_minutes": number, "sleep_hours": number, "resting_heart_rate": number, "stand_hours": number, "distance_km": number}. Numbers only, no units. JSON only, no markdown.' }
+        ]}]
+      })
+    });
+    const data = await resp.json();
+    const p = JSON.parse(data.content[0].text.replace(/```json|```/g, '').trim());
+    parsedHealthData = p;
+
+    // Auto-fill the manual fields too
+    if (p.steps) document.getElementById('ci-steps').value = p.steps;
+    if (p.active_calories) document.getElementById('ci-active').value = p.active_calories;
+    if (p.resting_calories) document.getElementById('ci-rest').value = p.resting_calories;
+    if (p.exercise_minutes) document.getElementById('ci-gym').value = p.exercise_minutes;
+    if (p.sleep_hours) document.getElementById('ci-sleep').value = p.sleep_hours;
+    if (p.resting_heart_rate) document.getElementById('ci-hr').value = p.resting_heart_rate;
+
+    // Show summary
+    const lines = [
+      p.steps ? `👟 Steps: <b>${p.steps.toLocaleString()}</b>` : null,
+      p.active_calories ? `🔥 Active calories: <b>${p.active_calories} kcal</b>` : null,
+      p.resting_calories ? `💤 Resting calories: <b>${p.resting_calories} kcal</b>` : null,
+      p.exercise_minutes ? `🏋️ Exercise: <b>${p.exercise_minutes} min</b>` : null,
+      p.sleep_hours ? `😴 Sleep: <b>${p.sleep_hours} hrs</b>` : null,
+      p.resting_heart_rate ? `❤️ Resting HR: <b>${p.resting_heart_rate} bpm</b>` : null,
+      p.distance_km ? `📍 Distance: <b>${p.distance_km} km</b>` : null,
+    ].filter(Boolean);
+
+    vals.innerHTML = lines.join('<br>');
+    ac.style.display = 'none';
+    parsed.style.display = 'block';
+  } catch(e) {
+    ac.textContent = 'Could not read screenshot — try a cleaner crop of the Health summary screen.';
+  }
+}
+
+function submitHealthData() {
+  const p = parsedHealthData;
+  const weight = document.getElementById('ci-weight').value;
+  const note = document.getElementById('ci-note').value;
+
+  if (p.steps) {
+    document.getElementById('d-sp').style.width = Math.min((p.steps / 10000) * 100, 100) + '%';
+    document.getElementById('d-sv').textContent = p.steps.toLocaleString() + '/10k';
+  }
+  if (weight) document.getElementById('nwt').textContent = weight + ' kg';
+
+  let msg = 'Daily check-in from Apple Health screenshot:\n';
+  if (p.steps) msg += `Steps: ${p.steps.toLocaleString()}\n`;
+  if (p.active_calories) msg += `Active calories burned: ${p.active_calories} kcal\n`;
+  if (p.resting_calories) msg += `Resting calories burned: ${p.resting_calories} kcal\n`;
+  if (p.exercise_minutes) msg += `Exercise: ${p.exercise_minutes} min\n`;
+  if (p.sleep_hours) msg += `Sleep: ${p.sleep_hours} hrs\n`;
+  if (p.resting_heart_rate) msg += `Resting HR: ${p.resting_heart_rate} bpm\n`;
+  if (p.distance_km) msg += `Distance: ${p.distance_km} km\n`;
+  if (weight) msg += `Sunday weigh-in: ${weight} kg\n`;
+  if (mood) msg += `Mood: ${mood}\n`;
+  if (note) msg += `Note: ${note}\n`;
+  msg += '\nGive me a full day analysis and coaching.';
+
+  pg('coach', document.querySelectorAll('.dtab')[5]);
+  document.getElementById('coach-inp').value = msg;
+  sendMsg();
+}
+
 function selMood(btn,m){
   document.querySelectorAll('.mbtn').forEach(b=>b.classList.remove('sel'));
   btn.classList.add('sel');mood=m;
@@ -903,6 +1025,26 @@ function submitCI(){
 function qp(t){document.getElementById('coach-inp').value=t;sendMsg();}
 function ck(e){if(e.key==='Enter'&&!e.shiftKey){e.preventDefault();sendMsg();}}
 
+function getTodayLog(){
+  const data=getJ(dk(new Date()));
+  const meals=data.meals||[];
+  if(!meals.length)return'No meals logged yet today.';
+  let c=0,p=0,cb=0,f=0;
+  meals.forEach(m=>{c+=m.cal||0;p+=m.pro||0;cb+=m.carb||0;f+=m.fat||0});
+  const lines=meals.map(m=>`  - ${m.name}${m.time?' ('+m.time+')':''}: ${m.cal}kcal, P:${m.pro||0}g`).join('\n');
+  return `Today's food log (${new Date().toLocaleDateString('en-GB',{weekday:'long',day:'numeric',month:'short'})}):\n${lines}\n  TOTAL: ${Math.round(c)} kcal | Protein: ${Math.round(p)}g | Carbs: ${Math.round(cb)}g | Fat: ${Math.round(f)}g\n  Remaining to target: ${Math.max(0,1400-Math.round(c))} kcal | ${Math.max(0,130-Math.round(p))}g protein`;
+}
+
+function updateChatPill(){
+  const data=getJ(dk(new Date()));
+  const meals=data.meals||[];
+  const pill=document.getElementById('today-summary-pill');
+  if(!meals.length){pill.style.display='none';return;}
+  let c=0,p=0;meals.forEach(m=>{c+=m.cal||0;p+=m.pro||0;});
+  pill.style.display='block';
+  pill.textContent=`${Math.round(c)} kcal · ${Math.round(p)}g P`;
+}
+
 async function sendMsg(){
   const inp=document.getElementById('coach-inp');
   const txt=inp.value.trim();if(!txt)return;inp.value='';
@@ -911,13 +1053,37 @@ async function sendMsg(){
   const th=document.createElement('div');th.className='msg th';th.textContent='Robby is thinking...';cm.appendChild(th);
   cm.scrollTop=cm.scrollHeight;
   document.getElementById('sbtn').disabled=true;
+
+  // Build system prompt with live food log injected
+  const todayLog=getTodayLog();
+  const systemWithLog=PROFILE+`\n\nLIVE TODAY'S FOOD LOG (always reference this when relevant):\n${todayLog}\n\nIMPORTANT FOOD LOGGING RULES:\n- When the user describes food they ate, estimate calories and macros and respond with your analysis. ALSO return a JSON block at the very end of your message in this exact format so the app can log it: [[LOG:{"name":"meal name","cal":number,"pro":number,"carb":number,"fat":number}]]\n- Only include the [[LOG:...]] block if the user is clearly describing food they ate. Do not include it for general questions.\n- After logging, tell the user what was added and update them on their running totals for the day.`;
+
   convo.push({role:'user',content:txt});
   try{
-    const r=await fetch('https://api.anthropic.com/v1/messages',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({model:'claude-sonnet-4-20250514',max_tokens:1000,system:PROFILE,messages:convo})});
+    const r=await fetch('https://api.anthropic.com/v1/messages',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({model:'claude-sonnet-4-20250514',max_tokens:1200,system:systemWithLog,messages:convo})});
     const d=await r.json();
-    const rep=d.content[0].text;
+    let rep=d.content[0].text;
+
+    // Check if Robby wants to log a meal
+    const logMatch=rep.match(/\[\[LOG:(\{.*?\})\]\]/s);
+    if(logMatch){
+      try{
+        const meal=JSON.parse(logMatch[1]);
+        meal.src='chat';
+        meal.time=new Date().toTimeString().slice(0,5);
+        addMeal(meal);
+        updateChatPill();
+        // Remove the log tag from the visible message
+        rep=rep.replace(/\[\[LOG:\{.*?\}\]\]/s,'').trim();
+        // Add a subtle logged indicator
+        rep=rep+'\n\n✓ Logged to your food journal.';
+      }catch(e){}
+    }
+
     convo.push({role:'assistant',content:rep});
-    th.className='msg co';th.textContent=rep;
+    th.className='msg co';
+    // Render with line breaks
+    th.innerHTML=rep.replace(/\n/g,'<br>');
   }catch(e){th.className='msg co';th.textContent='Connection error — try again.';}
   document.getElementById('sbtn').disabled=false;
   cm.scrollTop=cm.scrollHeight;

@@ -1,0 +1,146 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="UTF-8">
+<title>Robby — Loading your data</title>
+<style>
+body { font-family: sans-serif; background: #0f0f0f; color: #f0ede8; display: flex; align-items: center; justify-content: center; min-height: 100vh; margin: 0; }
+.box { text-align: center; padding: 40px; }
+.logo { font-size: 32px; margin-bottom: 16px; }
+.msg { font-size: 16px; color: #888; margin-bottom: 24px; }
+.done { font-size: 18px; color: #c8f060; display: none; margin-bottom: 20px; }
+.btn { padding: 14px 28px; background: rgba(200,240,96,0.12); border: 1px solid #c8f060; border-radius: 10px; color: #c8f060; font-size: 15px; cursor: pointer; text-decoration: none; display: none; }
+.item { font-size: 13px; color: #666; margin: 4px 0; }
+.item.ok { color: #c8f060; }
+</style>
+</head>
+<body>
+<div class="box">
+  <div class="logo">Robby.</div>
+  <div class="msg" id="msg">Loading your 11 days of history...</div>
+  <div id="log"></div>
+  <div class="done" id="done">✓ All data loaded — Robby knows your journey</div>
+  <a class="btn" id="go" href="index.html">Open Robby →</a>
+</div>
+<script>
+const days = [
+  {
+    date: '2026-06-01',
+    meals: [
+      { name: 'Sunday weigh-in', cal: 0, pro: 0, carb: 0, fat: 0, time: '07:00', src: 'log', note: 'Weight: 83.0 kg' }
+    ],
+    weight: 83.0,
+    steps: null, active: null, rest: null, gym: null
+  },
+  {
+    date: '2026-06-05',
+    meals: [
+      { name: 'Eggs, cottage cheese, chicken slices, sourdough', cal: 350, pro: 45, carb: 22, fat: 10, time: '08:00', src: 'log' },
+      { name: 'Vitaday protein drink', cal: 120, pro: 25, carb: 5, fat: 1, time: '10:00', src: 'log' },
+      { name: 'Salmon + broccoli', cal: 320, pro: 40, carb: 8, fat: 12, time: '13:00', src: 'log' },
+      { name: 'Protein coffee', cal: 80, pro: 15, carb: 4, fat: 2, time: '15:30', src: 'log' },
+      { name: 'Chicken soup (270g chicken, broccoli, cauliflower, mushrooms)', cal: 345, pro: 38, carb: 12, fat: 8, time: '19:00', src: 'log' }
+    ],
+    activity: { steps: null, active: 427, rest: 1667, gym: 88 }
+  },
+  {
+    date: '2026-06-06',
+    meals: [
+      { name: 'Surimi, egg, cottage cheese, sourdough', cal: 300, pro: 32, carb: 22, fat: 8, time: '08:00', src: 'log' },
+      { name: 'Kefir', cal: 80, pro: 5, carb: 8, fat: 3, time: '10:30', src: 'log' },
+      { name: 'Thai seafood meal (half rice)', cal: 480, pro: 35, carb: 40, fat: 14, time: '13:00', src: 'log' },
+      { name: '3 raw oysters', cal: 30, pro: 4, carb: 2, fat: 1, time: '14:00', src: 'log' },
+      { name: 'Fruit bowl', cal: 120, pro: 2, carb: 28, fat: 0, time: '16:00', src: 'log' },
+      { name: 'Protein shake', cal: 214, pro: 23, carb: 10, fat: 3, time: '20:00', src: 'log' }
+    ],
+    activity: { steps: null, active: 729, rest: 1723, gym: 131 }
+  },
+  {
+    date: '2026-06-07',
+    meals: [
+      { name: 'Surimi, eggs, cottage cheese, bread', cal: 290, pro: 30, carb: 20, fat: 8, time: '08:00', src: 'log' },
+      { name: 'Vitaday', cal: 120, pro: 25, carb: 5, fat: 1, time: '10:00', src: 'log' },
+      { name: 'Wagyu beef meal (half rice)', cal: 520, pro: 38, carb: 35, fat: 18, time: '13:00', src: 'log' },
+      { name: '2 meatballs', cal: 120, pro: 8, carb: 4, fat: 8, time: '15:00', src: 'log' },
+      { name: 'Banana bread', cal: 180, pro: 3, carb: 32, fat: 5, time: '16:00', src: 'log' },
+      { name: 'Peace ice cream', cal: 150, pro: 4, carb: 20, fat: 6, time: '17:00', src: 'log' },
+      { name: 'Roasted nuts', cal: 140, pro: 4, carb: 5, fat: 12, time: '18:00', src: 'log' },
+      { name: '2 surimi sushi', cal: 101, pro: 8, carb: 14, fat: 2, time: '20:00', src: 'log' }
+    ],
+    weight: 81.5,
+    activity: { steps: null, active: 391, rest: 1800, gym: null }
+  },
+  {
+    date: '2026-06-08',
+    meals: [
+      { name: 'Minced beef, eggs, bread', cal: 380, pro: 40, carb: 18, fat: 14, time: '08:00', src: 'log' },
+      { name: 'Vitaday', cal: 120, pro: 25, carb: 5, fat: 1, time: '10:00', src: 'log' },
+      { name: 'Beef potato bowl', cal: 420, pro: 38, carb: 32, fat: 12, time: '13:00', src: 'log' },
+      { name: 'Protein coffee', cal: 80, pro: 15, carb: 4, fat: 2, time: '15:30', src: 'log' },
+      { name: 'Chicken soup', cal: 240, pro: 32, carb: 10, fat: 6, time: '18:30', src: 'log' },
+      { name: 'Wakame salad', cal: 61, pro: 2, carb: 8, fat: 2, time: '19:00', src: 'log' }
+    ],
+    activity: { steps: null, active: 774, rest: 1704, gym: 132 }
+  },
+  {
+    date: '2026-06-09',
+    meals: [
+      { name: 'Fruit bowl', cal: 120, pro: 2, carb: 28, fat: 0, time: '08:30', src: 'log' },
+      { name: 'Protein coffee shake', cal: 180, pro: 28, carb: 8, fat: 4, time: '10:00', src: 'log' },
+      { name: 'Chicken bowl (75%)', cal: 390, pro: 42, carb: 30, fat: 10, time: '13:00', src: 'log' },
+      { name: 'Vitamin drink + collagen + probiotic', cal: 60, pro: 8, carb: 6, fat: 0, time: '15:00', src: 'log' },
+      { name: 'Seafood Pad Thai', cal: 720, pro: 38, carb: 72, fat: 22, time: '19:30', src: 'log' }
+    ],
+    activity: { steps: null, active: 660, rest: 1678, gym: null }
+  },
+  {
+    date: '2026-06-10',
+    meals: [
+      { name: 'Eggs, surimi, cottage cheese', cal: 270, pro: 32, carb: 6, fat: 10, time: '08:00', src: 'log' },
+      { name: 'Protein coffee', cal: 80, pro: 15, carb: 4, fat: 2, time: '10:00', src: 'log' },
+      { name: 'Chicken fajita (200g chicken, 100g rice)', cal: 550, pro: 52, carb: 48, fat: 12, time: '13:00', src: 'log' },
+      { name: 'Greek yogurt bowl (fruit, honey, nuts)', cal: 320, pro: 18, carb: 38, fat: 10, time: '16:00', src: 'log' },
+      { name: '2 rusks with cottage cheese and avocado', cal: 355, pro: 14, carb: 28, fat: 14, time: '20:00', src: 'log' }
+    ],
+    activity: { steps: 10116, active: 798, rest: 1860, gym: 144 }
+  },
+  {
+    date: '2026-06-11',
+    meals: [
+      { name: '2 eggs, 70g surimi, 25g cottage cheese, 13g avocado, 1 rusk', cal: 250, pro: 28, carb: 12, fat: 9, time: '08:00', src: 'log' },
+      { name: 'Protein coffee', cal: 80, pro: 15, carb: 4, fat: 2, time: '10:00', src: 'log' }
+    ],
+    activity: { steps: null, active: null, rest: null, gym: null }
+  }
+];
+
+function dk(dateStr) { return dateStr; }
+
+let logDiv = document.getElementById('log');
+
+days.forEach((day, i) => {
+  setTimeout(() => {
+    const key = 'rbj_' + day.date;
+    const meals = day.meals.map((m, j) => ({ ...m, id: Date.now() + i * 100 + j }));
+    const data = { meals };
+    if (day.weight) data.weight = day.weight;
+    if (day.activity) data.activity = day.activity;
+    localStorage.setItem(key, JSON.stringify(data));
+
+    const el = document.createElement('div');
+    el.className = 'item ok';
+    el.textContent = '✓ ' + day.date + ' — ' + meals.length + ' meals logged';
+    logDiv.appendChild(el);
+
+    if (i === days.length - 1) {
+      setTimeout(() => {
+        document.getElementById('msg').style.display = 'none';
+        document.getElementById('done').style.display = 'block';
+        document.getElementById('go').style.display = 'inline-block';
+      }, 400);
+    }
+  }, i * 120);
+});
+</script>
+</body>
+</html>
